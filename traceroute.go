@@ -15,11 +15,11 @@ const DEFAULT_MAX_HOPS = 64
 const DEFAULT_TIMEOUT_MS = 500
 const DEFAULT_RETRIES = 3
 const DEFAULT_PACKET_SIZE = 52
-const DEFAULT_SOURCE_ADDR = "127.0.0.1"
+const DEFAULT_SOURCE_ADDR = ""
 
 // Return the first non-loopback address as a 4 byte IP address. This address
 // is used for sending packets out.
-func socketAddr() (addr [4]byte, err error) {
+func GetSocketAddr() (addr [4]byte, err error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return
@@ -180,7 +180,13 @@ func Traceroute(dest string, options *TracerouteOptions, c ...chan TracerouteHop
 	result.Hops = []TracerouteHop{}
 	destAddr, err := ResolveAddr(dest)
 	result.DestinationAddress = destAddr
-	socketAddr, err := ResolveAddr(options.sourceAddr)
+	var socketAddr [4]byte
+	if options.SourceAddress() == DEFAULT_SOURCE_ADDR {
+		socketAddr, err = GetSocketAddr()
+	} else {
+		socketAddr, err = ResolveAddr(options.SourceAddress())
+	}
+
 	if err != nil {
 		return
 	}
