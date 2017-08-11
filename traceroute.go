@@ -15,6 +15,7 @@ const DEFAULT_MAX_HOPS = 64
 const DEFAULT_TIMEOUT_MS = 500
 const DEFAULT_RETRIES = 3
 const DEFAULT_PACKET_SIZE = 52
+const DEFAULT_SOURCE_ADDR = "127.0.0.1"
 
 // Return the first non-loopback address as a 4 byte IP address. This address
 // is used for sending packets out.
@@ -37,7 +38,7 @@ func socketAddr() (addr [4]byte, err error) {
 }
 
 // Given a host name convert it to a 4 byte IP address.
-func destAddr(dest string) (destAddr [4]byte, err error) {
+func ResolveAddr(dest string) (destAddr [4]byte, err error) {
 	addrs, err := net.LookupHost(dest)
 	if err != nil {
 		return
@@ -59,6 +60,7 @@ type TracerouteOptions struct {
 	timeoutMs  int
 	retries    int
 	packetSize int
+	sourceAddr string
 }
 
 func (options *TracerouteOptions) Port() int {
@@ -116,6 +118,17 @@ func (options *TracerouteOptions) SetPacketSize(packetSize int) {
 	options.packetSize = packetSize
 }
 
+func (options *TracerouteOptions) SourceAddress() string {
+	if options.sourceAddr == "" {
+		options.sourceAddr = DEFAULT_SOURCE_ADDR
+	}
+	return options.sourceAddr
+}
+
+func (options *TracerouteOptions) SetSourceAddress(addr string) {
+	options.sourceAddr = addr
+}
+
 // TracerouteHop type
 type TracerouteHop struct {
 	Success     bool
@@ -165,9 +178,9 @@ func closeNotify(channels []chan TracerouteHop) {
 // the elapsed time and its IP address.
 func Traceroute(dest string, options *TracerouteOptions, c ...chan TracerouteHop) (result TracerouteResult, err error) {
 	result.Hops = []TracerouteHop{}
-	destAddr, err := destAddr(dest)
+	destAddr, err := ResolveAddr(dest)
 	result.DestinationAddress = destAddr
-	socketAddr, err := socketAddr()
+	socketAddr, err := ResolveAddr(options.sourceAddr)
 	if err != nil {
 		return
 	}
